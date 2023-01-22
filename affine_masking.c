@@ -105,3 +105,22 @@ struct mask affine_masking(uint8_t x) {
 
     return m;
 }
+
+uint8_t affine_demasking(struct mask m) {
+    uint8_t mul_masking, demasked_x;
+
+    mul_masking = m.masked_x ^ m.r0;
+
+    demasked_x = search_Alog_Table(mul_masking);
+    if (demasked_x < LogTable[m.r1]) {
+        demasked_x = demasked_x + 255; //modulo de la fonction mul dans GF(256)
+    }
+
+    if ((demasked_x - LogTable[m.r1]) == 0) {
+        demasked_x = 1; //this case means that x=1 (because x can't be 0 in function mul GF(256))
+    } else {
+            demasked_x = search_Log_Table(demasked_x - LogTable[m.r1]);
+    }
+
+    return demasked_x;
+}
