@@ -44,7 +44,7 @@ uint32_t rowperm(uint32_t S, int B0_pos, int B1_pos, int B2_pos, int B3_pos)
 void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
 {
     int round, cpt_ = 0;                                                                ////
-    struct mask Masked_P[16];                                                           ////  
+    struct mask Masked_P;                                                           ////  
     uint32_t S[4], T;       
     uint16_t W[8], T6, T7;
 
@@ -60,13 +60,12 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
     // ------------------------ MASKING PLAINTEXT ----------------------------
     // -----------------------------------------------------------------------
 
+    Masked_P = affine_masking(P);
     printf("MASKED PLAINTEXT : ");
     for (int i=0; i<16 ; i++) {                                                         ////
-        Masked_P[i] = affine_masking(P[i]);                                             ////
-        printf("%02x ", Masked_P[i].masked_x);                                          ////
+        printf("%02x ", Masked_P.masked_x[i]);                                          ////
     }                                                                                   ////
     printf("\n");                                                                       ////
-
 
     // -------------------- MASKED PLAINTEXT IN SBOX ------------------------
     // ----------------------------------------------------------------------
@@ -78,10 +77,10 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
 
     for (int i=15; i>-1; i--) {                                                         ////
 
-        S[0] |= (((Masked_P[i].masked_x & (1u << 0))>0) << cpt_) | ((Masked_P[i].masked_x & (1u << 4))>0) << (cpt_+1);                             ////
-        S[1] |= (((Masked_P[i].masked_x & (1u << 1))>0) << cpt_) | ((Masked_P[i].masked_x & (1u << 5))>0) << (cpt_+1);                             
-        S[2] |= (((Masked_P[i].masked_x & (1u << 2))>0) << cpt_) | ((Masked_P[i].masked_x & (1u << 6))>0) << (cpt_+1);                             
-        S[3] |= (((Masked_P[i].masked_x & (1u << 3))>0) << cpt_) | ((Masked_P[i].masked_x & (1u << 7))>0) << (cpt_+1);                             
+        S[0] |= (((Masked_P.masked_x[i] & (1u << 0))>0) << cpt_) | ((Masked_P.masked_x[i] & (1u << 4))>0) << (cpt_+1);                             ////
+        S[1] |= (((Masked_P.masked_x[i] & (1u << 1))>0) << cpt_) | ((Masked_P.masked_x[i] & (1u << 5))>0) << (cpt_+1);                             
+        S[2] |= (((Masked_P.masked_x[i] & (1u << 2))>0) << cpt_) | ((Masked_P.masked_x[i] & (1u << 6))>0) << (cpt_+1);                             
+        S[3] |= (((Masked_P.masked_x[i] & (1u << 3))>0) << cpt_) | ((Masked_P.masked_x[i] & (1u << 7))>0) << (cpt_+1);                             
 
         cpt_ += 2;                                                                      ////
     }
@@ -101,11 +100,12 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
     // -------------------------------------------------------------------------------
 
     printf("DEMASKED PLAINTEXT : ");                                                    ////
-
     for (int i=0; i<16; i++) {                                                          ////
-        Masked_P[i].masked_x = cipher_tab[i];                                           ////
-        cipher_tab[i] = affine_demasking(Masked_P[i]);                                  ////
-        printf("%02x ", cipher_tab[i]);                                                 ////
+        Masked_P.masked_x[i] = cipher_tab[i];                                           ////
+    }                                                                                   ////
+    Masked_P = affine_demasking(Masked_P);                                              ////
+    for (int i=0; i<16; i++) {                                                          ////
+        printf("%02x ", Masked_P.demasked_x[i]);                                        ////
     }                                                                                   ////
     printf("\n");                                                                       ////
 
@@ -119,7 +119,7 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
     W[6] = ((uint16_t)K[12] << 8) | (uint16_t)K[13];
     W[7] = ((uint16_t)K[14] << 8) | (uint16_t)K[15];
 
-    for (round = 0; round < 40; round++)
+    for (round = 0; round < 1; round++) //rounds = 40
     {
         /*===SubCells===*/
         S[1] ^= S[0] & S[2];
@@ -143,7 +143,6 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
         }                                                                               ////
         printf("\n");                                                                   ////
         */
-
 
         /*===PermBits===*/
         S[0] = rowperm(S[0], 0, 3, 2, 1);

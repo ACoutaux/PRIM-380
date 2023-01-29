@@ -50,7 +50,8 @@ const uint8_t ALogTable[256] = {
 struct mask {
     uint8_t r1; //multiplicative mask
     uint8_t r0; //additive mask
-    uint8_t masked_x; //masked value
+    uint8_t masked_x[16]; //masked 128 bits array
+    uint8_t demasked_x[16]; //demasked 128 bits array
 };
 
 uint8_t search_Alog_Table(uint8_t mul_masking) {
@@ -80,7 +81,7 @@ uint8_t affine_mul(uint8_t x1, uint8_t x2) {
     }
 } 
 
-struct mask affine_masking(uint8_t x) {
+struct mask affine_masking(uint8_t x[16]) {
 
     struct mask m;
     uint8_t mul_masking;
@@ -98,29 +99,38 @@ struct mask affine_masking(uint8_t x) {
             perror("getrandom") : "";
             //printf("r1 : %d\n",m.r1);
     }
-    
-    mul_masking = affine_mul(x,m.r1);
-    //printf("mul_masking : %d\n", mul_masking);
-    m.masked_x = mul_masking ^ m.r0;
+
+    //Put r0 and r1 into two concatenante 4-bits masks
+    m.r0 = (m.r0 & 0b11110000) | (m.r0 >> 4);
+    m.r1 = (m.r1 & 0b11110000) | (m.r1 >> 4);
+    //printf("r1 is : %02x\n", m.r1);
+
+    for (int i=0; i<16; i++) {
+        mul_masking = affine_mul(x[i],m.r1);
+        m.masked_x[i] = mul_masking ^ m.r0;
+    }
 
     return m;
 }
 
-uint8_t affine_demasking(struct mask m) {
+struct mask affine_demasking(struct mask m) {
     uint8_t mul_masking, demasked_x;
 
-    mul_masking = m.masked_x ^ m.r0;
+    for(int i=0; i<16; i++) {
+        mul_masking = m.masked_x[i] ^ m.r0;
 
-    demasked_x = search_Alog_Table(mul_masking);
-    if (demasked_x < LogTable[m.r1]) {
-        demasked_x = demasked_x + 255; //modulo de la fonction mul dans GF(256)
+        demasked_x = search_Alog_Table(mul_masking);
+        if (demasked_x < LogTable[m.r1]) {
+            demasked_x = demasked_x + 255; //modulo de la fonction mul dans GF(256)
+        }
+
+        if ((demasked_x - LogTable[m.r1]) == 0) {
+            demasked_x = 1; //this case means that x=1 (because x can't be 0 in function mul GF(256))
+        } else {
+                demasked_x = search_Log_Table(demasked_x - LogTable[m.r1]);
+        }
+        m.demasked_x[i] = demasked_x;
     }
 
-    if ((demasked_x - LogTable[m.r1]) == 0) {
-        demasked_x = 1; //this case means that x=1 (because x can't be 0 in function mul GF(256))
-    } else {
-            demasked_x = search_Log_Table(demasked_x - LogTable[m.r1]);
-    }
-
-    return demasked_x;
+    return m;
 }

@@ -7,5 +7,17 @@ uint8_t C[16]; //variable to contain output ciphertext
 int main(void) {    
 
     masked_giftb128(P,K,C);
+
+    //Test & and . ditributivity
+    //--------------------------
+    /*uint8_t x, aff_mul_res_1,aff_mul_res_2, p1, p2, s1 = 0b11001010, s2 = 0b01011111;
+    getrandom(&x, sizeof(uint8_t), GRND_NONBLOCK);
+    aff_mul_res_1 = affine_mul(x,s1);
+    aff_mul_res_2 = affine_mul(x,s2);
+    p1 = aff_mul_res_1 ^ aff_mul_res_2;
+    p2 = affine_mul(x,s1^s2);
+    //printf("P1 is : %02x,  P2 is : %02x\n", p1, p2);*/
+    //------------------------------------------------
+
     return 0;
 }
