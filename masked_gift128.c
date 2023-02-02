@@ -44,8 +44,8 @@ uint32_t rowperm(uint32_t S, int B0_pos, int B1_pos, int B2_pos, int B3_pos)
 void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
 {
     int round, cpt_ = 0;                                                                ////
-    struct mask Masked_P;                                                           ////  
-    uint32_t S[4], T;       
+    struct mask Masked_P;                                                               ////  
+    uint32_t S[4], T, masked_XOR;       
     uint16_t W[8], T6, T7;
 
     // -------------------------- PLAINTEXT ----------------------------------
@@ -161,8 +161,18 @@ void masked_giftb128(uint8_t P[16], const uint8_t K[16], uint8_t C[16])
         */
 
         /*===AddRoundKey===*/
-        S[2] ^= ((uint32_t)W[2] << 16) | (uint32_t)W[3];
-        S[1] ^= ((uint32_t)W[6] << 16) | (uint32_t)W[7];
+        masked_XOR = S[2] ^ (((uint32_t)W[2] << 16) | (uint32_t)W[3]);
+        S[2] = masked_XOR;
+        masked_XOR = S[1] ^ (((uint32_t)W[6] << 16) | (uint32_t)W[7]);
+        S[1] = masked_XOR;
+
+        extract_from_SBox(S);                                                           ////    
+        printf("addroundkey %d : ", round);                                             ////
+        for (int i = 0; i < 16; i++)                                                    ////
+        {                                                                               ////
+            printf("%02x ", cipher_tab[i]);                                             ////
+        }                                                                               ////
+        printf("\n");                                                                   ////
 
         /*Add round constant*/
         S[3] ^= 0x80000000 ^ GIFT_RC[round];
